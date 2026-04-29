@@ -2,7 +2,6 @@
 import sys
 
 
-
 class System:
     def __init__(self, start_zone=None, end_zone=None):
         self.zones = []
@@ -23,8 +22,6 @@ class Connection:
         self.start_zone = start_zone
         self.end_zone = end_zone
         self.currently_in = currently_in if currently_in else []
-
-
 
 
 class Drone:
@@ -59,26 +56,47 @@ class Zone:
         self.zone_type = zone_type
         self.color = color
 
+
 class Parser:
     def __init__(self, file: str):
         self.file = file
+
+    def parse(self):
+        with open(self.file, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if line.startswith("#"):
+                    pass
+                elif not line:
+                    pass
+                elif line.startswith("nb_drones"):
+                    self.drone_nb()
+                elif line.startswith("start_hub"):
+                    self.get_zone()
+                elif line.startswith("end_hub"):
+                    self.get_zone()
+                elif line.startswith("hub"):
+                    self.get_zone()
+                elif line.startswith("connection"):
+                    self.get_connection()
+                else:
+                    print("I will raise an error here")
+
+    def drone_nb(self):
+        ...
+
+    def get_zone(self):
+        ...
+
+    def get_connection(self):
+        ...
 
 
 class PathFinder():
     def __init__(self, system: System):
         self.system = system
 
+
 class Simulation:
     def __init__(self,  system: System):
         self.system = system
-
-
-
-if __name__=="__main__":
-    
-
-
-    file = sys.argv[1]
-
-    parse = Parser(file)
-    
