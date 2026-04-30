@@ -1,5 +1,4 @@
-
-import sys
+from costume_error import *
 
 
 class System:
@@ -44,8 +43,8 @@ class Zone:
                  x: int,
                  y: int,
                  capacity: int = 1,
-                 current_drones: list[Drone] = None,
                  zone_type: str = "normal",
+                 current_drones: list[Drone] = None,
                  color: str = None
                  ):
         self.name = name
@@ -70,25 +69,50 @@ class Parser:
                 elif not line:
                     pass
                 elif line.startswith("nb_drones"):
-                    self.drone_nb()
-                elif line.startswith("start_hub"):
-                    self.get_zone()
-                elif line.startswith("end_hub"):
-                    self.get_zone()
-                elif line.startswith("hub"):
-                    self.get_zone()
+                    nb = self.drone_nb(line)
+                    for i in range(nb):
+                        drone = Drone(
+                            id=f"D-{i}", current_zone=System.start_zone)
+                        System.drones.append(drone)
+
+                elif line.startswith("start_hub") or \
+                        line.startswith("end_hub") or \
+                        line.startswith("hub"):
+                    zone = self.get_zone(line)
+                    System.zones.append(zone)
                 elif line.startswith("connection"):
-                    self.get_connection()
+                    connection = self.get_connection(line)
                 else:
                     print("I will raise an error here")
 
-    def drone_nb(self):
-        ...
+    def drone_nb(self, line: str) -> int:
+        try:
+            l = line.split()
+            res = int(l[1])
+            if res < 1:
+                raise ParserError("nb_drones must be a positive integer")
+            return res
+        except ValueError:
+            raise ParserError("nb_drones must be a positive integer")
 
-    def get_zone(self):
-        ...
+    def get_zone(self, line: str) -> Zone:
+        my_dict = {}
 
-    def get_connection(self):
+        start = line.find("[") + 1
+        end = line.find("]")
+        config = line[start:end]
+        l = line.split()
+        for element in config.split():
+            res = element.split("=")
+            my_dict[res[0]] = res[1]
+
+        zone = Zone(name=l[1], x=int(l[2]), y=int(l[3]),
+                    capacity=int(my_dict.get("max_drones", 1)),
+                    zone_type=my_dict.get("zone", "normal"),
+                    color=my_dict.get("color", None))
+        return zone
+
+    def get_connection(self, line: str) -> Connection:
         ...
 
 
