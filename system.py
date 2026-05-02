@@ -1,14 +1,19 @@
 from __future__ import annotations
-from costume_error import *
+from typing import Optional
+
+
+class ParserError(Exception):
+    pass
 
 
 class System:
-    def __init__(self, start_zone=None, end_zone=None):
-        self.zones = []
-        self.drones = []
-        self.connections = []
-        self.start_zone = start_zone
-        self.end_zone = end_zone
+    def __init__(self, start_zone: Optional[Zone] = None,
+                 end_zone: Optional[Zone] = None) -> None:
+        self.zones: list[Zone] = []
+        self.drones: list[Drone] = []
+        self.connections: list[Connection] = []
+        self.start_zone: Optional[Zone] = start_zone
+        self.end_zone: Optional[Zone] = end_zone
 
 
 class Connection:
@@ -16,7 +21,7 @@ class Connection:
                  start_zone: Zone,
                  end_zone: Zone,
                  max_capacity: int = 1,
-                 currently_in: list[Drone] = None
+                 currently_in: Optional[list[Drone]] = None
                  ):
         self.max_capacity = max_capacity
         self.start_zone = start_zone
@@ -31,7 +36,7 @@ class Drone:
                  path: list[Zone] = [],
                  status: str = "waiting",
                  turns_remaining: int = 0
-                 ):
+                 ) -> None:
         self.current_zone = current_zone
         self.id = id
         self.path = path if path else []
@@ -45,9 +50,9 @@ class Zone:
                  y: int,
                  capacity: int = 1,
                  zone_type: str = "normal",
-                 current_drones: list[Drone] = None,
-                 color: str = None
-                 ):
+                 current_drones: Optional[list[Drone]] = None,
+                 color: Optional[str] = None
+                 ) -> None:
         self.name = name
         self.x = x
         self.y = y
@@ -58,10 +63,10 @@ class Zone:
 
 
 class Parser:
-    def __init__(self, file: str):
+    def __init__(self, file: str) -> None:
         self.file = file
 
-    def parse(self):
+    def parse(self) -> System:
         system = System()
         nb = 0
         line_nb = 0
@@ -123,8 +128,8 @@ class Parser:
 
     def drone_nb(self, line: str) -> int:
         try:
-            l = line.split()
-            res = int(l[1])
+            splitted_line = line.split()
+            res = int(splitted_line[1])
             if res < 1:
                 raise ParserError("nb_drones must be a positive integer")
             return res
@@ -133,23 +138,25 @@ class Parser:
 
     def get_zone(self, line: str) -> Zone:
         allowed_type = ["normal", "blocked", "restricted", "priority"]
-        allowed_config_zone = [...]
-        allowed_config_connection = [...]
+        allowed_config_zone = ["zone", "color", "max_drones"]
         try:
             my_dict = {}
             start = line.find("[") + 1
             end = line.find("]")
             config = line[start:end]
-            l = line.split()
+            ln = line.split()
             for element in config.split():
                 res = element.split("=")
                 my_dict[res[0]] = res[1]
+            for key in my_dict:
+                if key not in allowed_config_zone:
+                    raise ParserError(f"invalid metadata key: {key}")
             if my_dict.get("zone", "normal") not in allowed_type:
                 raise ParserError("invalid zone type")
-            
+
             if int(my_dict.get("max_drones", 1)) < 1:
-                raise ParserError("max_drones can't be negative")
-            zone = Zone(name=l[1], x=int(l[2]), y=int(l[3]),
+                raise ParserError("max_drones should be positive integer")
+            zone = Zone(name=ln[1], x=int(ln[2]), y=int(ln[3]),
                         capacity=int(my_dict.get("max_drones", 1)),
                         zone_type=my_dict.get("zone", "normal"),
                         color=my_dict.get("color", None))
@@ -160,18 +167,23 @@ class Parser:
             raise ParserError("invalid zone format")
 
     def get_connection(self, line: str, system: System) -> Connection:
+
+        allowed_config = ["max_link_capacity"]
         try:
-            l = line.split()
-            zone_list = l[1].split("-")
+            ln = line.split()
+            zone_list = ln[1].split("-")
             max_capacity = 1
             if "[" in line:
                 start = line.find("[") + 1
                 end = line.find("]")
                 config = line[start:end]
-                _, value = config.split("=")
+                key, value = config.split("=")
+                if key not in allowed_config:
+                    raise ParserError(f"invalid metadata key: {key}")
                 max_capacity = int(value)
                 if max_capacity < 1:
-                    raise ParserError("max_link_capacity must be positive integer")
+                    raise ParserError(
+                        "max_link_capacity must be positive integer")
 
             start_z = None
             end_z = None

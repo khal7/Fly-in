@@ -1,6 +1,5 @@
 import sys
 from system import *
-from costume_error import *
 
 
 
