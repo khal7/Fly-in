@@ -204,9 +204,7 @@ class Parser:
             raise ParserError("invalid connection format")
 
 
-class PathFinder():
-    def __init__(self, system: System):
-        self.system = system
+
 
 
 class Simulation:
