@@ -20,10 +20,11 @@ if __name__=="__main__":
         exit(1)
     path = PathFinder(system)
     get_path = path.find_path(system.start_zone, system.end_zone)
+    similation = Simulation(system)
+    similation.run(get_path)
 
-
-    for zone in get_path:
-        print(zone.name)
+    # for zone in get_path:
+    #     print(zone.name)
     # for zone in system.zones:
     #     print(zone.name, zone.zone_type, zone.x, zone.y, zone.color, zone.capacity)
     # print("=" * 40)

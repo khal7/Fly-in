@@ -121,7 +121,7 @@ class Parser:
                 raise ParserError("missing nb_drones")
             for i in range(nb):
                 drone = Drone(
-                    id=f"D-{i}", current_zone=system.start_zone)
+                    id=f"D{i+1}", current_zone=system.start_zone)
                 system.drones.append(drone)
 
             return system
@@ -210,3 +210,14 @@ class Parser:
 class Simulation:
     def __init__(self,  system: System):
         self.system = system
+
+    def run(self, direction: list[Zone]) -> None:
+        drone = self.system.drones[0]
+        turn = 1
+        i = 1
+        while drone.current_zone != self.system.end_zone:
+            drone.current_zone = direction[i]
+            print(f"{drone.id}-{drone.current_zone.name}")
+            i += 1
+            turn += 1
+            
