@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Optional
+from path_finder import PathFinder
 
 
 class ParserError(Exception):
@@ -208,14 +209,15 @@ class Parser:
 
 
 class Simulation:
-    def __init__(self,  system: System):
+    def __init__(self,  system: System, pathfinder: PathFinder):
         self.system = system
+        self.pathfinder = pathfinder
 
-    def run(self, direction: list[Zone]) -> None:
+    def run(self) -> None:
         drone = self.system.drones[0]
         turn = 1
         i = 1
-        while drone.current_zone != self.system.end_zone:
+        while not all(drone.current_zone == self.system.end_zone for drone in self.system.drones):
             drone.current_zone = direction[i]
             print(f"{drone.id}-{drone.current_zone.name}")
             i += 1

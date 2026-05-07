@@ -39,10 +39,13 @@ class PathFinder():
                 visited.append(current_zone)
             neighbors = self.get_neighbors(current_zone)
             for neighbor in neighbors:
+                if neighbor.zone_type == "blocked":
+                    continue
+                if len(neighbor.current_drones) >= neighbor.capacity:
+                    if neighbor != end_zone:
+                        continue
                 if neighbor.zone_type == "restricted":
                     new_cost = cost + 2
-                elif neighbor.zone_type == "blocked":
-                    continue
                 elif neighbor.zone_type == "priority":
                     new_cost = cost + 0.5
                 else:
