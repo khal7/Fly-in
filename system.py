@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional
-from path_finder import PathFinder
+
 
 
 class ParserError(Exception):
@@ -205,21 +205,51 @@ class Parser:
             raise ParserError("invalid connection format")
 
 
-
-
-
 class Simulation:
     def __init__(self,  system: System, pathfinder: PathFinder):
         self.system = system
         self.pathfinder = pathfinder
 
+    def check_connection(self, zone_a: Zone, zone_b: Zone) -> Optional[Connection]:
+        for connection in self.system.connections:
+            if (connection.start_zone == zone_a and connection.end_zone == zone_b) or \
+                (connection.start_zone == zone_b and connection.end_zone == zone_a):
+               return connection
+        return None
+
     def run(self) -> None:
-        drone = self.system.drones[0]
         turn = 1
-        i = 1
+        for drone in self.system.drones:
+            self.system.start_zone.current_drones.append(drone)
         while not all(drone.current_zone == self.system.end_zone for drone in self.system.drones):
-            drone.current_zone = direction[i]
-            print(f"{drone.id}-{drone.current_zone.name}")
-            i += 1
+            moves = {}
+            for drone in self.system.drones:
+                if drone.current_zone == self.system.end_zone:
+                    continue
+                try:
+                    paths = self.pathfinder.find_path(drone.current_zone, self.system.end_zone)
+                    if len(paths) > 1:
+                        moves[drone] = paths[1]
+                except ParserError:
+                    moves[drone] = None
+            for drone in self.system.drones:
+                if drone not in moves:
+                    continue
+                next_zone = moves[drone]
+                if next_zone is None:
+                    continue
+                connection = self.check_connection(drone.current_zone, next_zone)
+                if connection is None:
+                    continue
+                if len(connection.currently_in) >= connection.max_capacity:
+                    continue
+                
+               
+                drone.current_zone.current_drones.remove(drone)
+                next_zone.current_drones.append(drone)
+                drone.current_zone = next_zone
+                connection.currently_in.append(drone)
+                connection.currently_in.remove(drone)
+            print(" ".join(f"{drone.id}-{moves[drone].name}" for drone in moves if moves[drone]))
             turn += 1
             

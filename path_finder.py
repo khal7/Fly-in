@@ -1,4 +1,4 @@
-from system import System, Zone, ParserError
+from system import System , Zone, ParserError
 
 
 class PathFinder():
