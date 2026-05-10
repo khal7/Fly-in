@@ -14,12 +14,12 @@ class PathFinder():
                 neighbors.append(item.start_zone)
         return neighbors
 
-    def find_path(self, start_zone: Zone, end_zone: Zone) -> list[Zone]:
+    def find_path(self, start_zone: Zone, end_zone: Zone, reserved: list[Zone]) -> list[Zone]:
         needs_exploration = [(0, start_zone)]
         previous: dict[Zone, Zone] = {}
         visited = []
         costs = {start_zone: 0}
-
+        #print(f"reserved: {[z.name for z in reserved]}")
         while needs_exploration:
             cheapest = min(needs_exploration, key=lambda x: x[0])
             needs_exploration.remove(cheapest)
@@ -44,6 +44,8 @@ class PathFinder():
                 if len(neighbor.current_drones) >= neighbor.capacity:
                     if neighbor != end_zone:
                         continue
+                if neighbor in reserved:
+                    continue
                 if neighbor.zone_type == "restricted":
                     new_cost = cost + 2
                 elif neighbor.zone_type == "priority":

@@ -19,7 +19,7 @@ if __name__=="__main__":
         print(e)
         exit(1)
     path = PathFinder(system)
-    get_path = path.find_path(system.start_zone, system.end_zone)
+    #get_path = path.find_path(system.start_zone, system.end_zone)
     similation = Simulation(system, path)
     similation.run()
     

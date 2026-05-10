@@ -84,6 +84,7 @@ class Parser:
                         if system.start_zone is not None:
                             raise ParserError("duplicate start_hub")
                         zone = self.get_zone(line)
+                        zone.capacity = 99999
 
                         system.start_zone = zone
                         system.zones.append(zone)
@@ -91,8 +92,10 @@ class Parser:
                         if system.end_zone is not None:
                             raise ParserError("duplicate end_hub")
                         zone = self.get_zone(line)
+                        zone.capacity = 99999
                         system.end_zone = zone
                         system.zones.append(zone)
+
                     elif line.startswith("hub"):
                         z = self.get_zone(line)
                         for zn in system.zones:
@@ -222,34 +225,59 @@ class Simulation:
         for drone in self.system.drones:
             self.system.start_zone.current_drones.append(drone)
         while not all(drone.current_zone == self.system.end_zone for drone in self.system.drones):
+            reserved = []
             moves = {}
             for drone in self.system.drones:
                 if drone.current_zone == self.system.end_zone:
                     continue
                 try:
-                    paths = self.pathfinder.find_path(drone.current_zone, self.system.end_zone)
-                    if len(paths) > 1:
-                        moves[drone] = paths[1]
+                   
+                    paths = self.pathfinder.find_path(drone.current_zone, self.system.end_zone, reserved)
+                    # for zone in paths:
+                    #     print(zone.name)
+                    if len(paths) < 2:
+                        moves[drone] = None
+                    else:
+                        next_zone = paths[1]
+                      #  print(paths[1].name)
+                        moves[drone] = next_zone
+                        reserved.append(next_zone)
+                        
                 except ParserError:
                     moves[drone] = None
-            for drone in self.system.drones:
-                if drone not in moves:
+                    #print("None")
+
+            for d in self.system.drones:
+                if d not in moves:
                     continue
-                next_zone = moves[drone]
+                if d.current_zone == self.system.end_zone:
+                    continue
+                next_zone = moves[d]
                 if next_zone is None:
                     continue
-                connection = self.check_connection(drone.current_zone, next_zone)
+                connection = self.check_connection(d.current_zone, next_zone)
                 if connection is None:
                     continue
                 if len(connection.currently_in) >= connection.max_capacity:
                     continue
                 
-               
-                drone.current_zone.current_drones.remove(drone)
-                next_zone.current_drones.append(drone)
-                drone.current_zone = next_zone
-                connection.currently_in.append(drone)
-                connection.currently_in.remove(drone)
+                if len(next_zone.current_drones) >= next_zone.capacity:
+                    continue
+                # print(f"Turn {turn}")
+                # for drone in self.system.drones:
+                #     print(f"  {drone.id} at {drone.current_zone.name}")
+                d.current_zone.current_drones.remove(d)
+                next_zone.current_drones.append(d)
+                d.current_zone = next_zone
+                #print(f"Moving {d.id} from {d.current_zone.name} to {next_zone.name}")
+                # connection.currently_in.append(d)
+                # connection.currently_in.remove(d)
+            # print(f"--- Turn {turn} ---") 
+            # for drone in self.system.drones:
+            #     print(f"{drone.id} at {drone.current_zone.name}")
             print(" ".join(f"{drone.id}-{moves[drone].name}" for drone in moves if moves[drone]))
+
             turn += 1
+            # if turn > 20:
+            #     break
             
