@@ -222,30 +222,37 @@ class Simulation:
 
     def run(self) -> None:
         turn = 1
+        # adding all drones to the start zone
         for drone in self.system.drones:
             self.system.start_zone.current_drones.append(drone)
         while not all(drone.current_zone == self.system.end_zone for drone in self.system.drones):
             reserved = []
             moves = {}
+            moved = set()
             for drone in self.system.drones:
                 if drone.current_zone == self.system.end_zone:
                     continue
                 try:
                    
-                    paths = self.pathfinder.find_path(drone.current_zone, self.system.end_zone, reserved)
+                    paths = self.pathfinder.find_path(drone.current_zone, self.system.end_zone)
+                   # print(f"current zone: {drone.current_zone.name}")
                     # for zone in paths:
-                    #     print(zone.name)
+                    #     print(f" this is path {zone.name}")
                     if len(paths) < 2:
                         moves[drone] = None
                     else:
                         next_zone = paths[1]
                       #  print(paths[1].name)
                         moves[drone] = next_zone
-                        reserved.append(next_zone)
+                        #reserved.append(next_zone)
+                        # for zone in reserved:
+                        #     print(f"THIS: {zone.name}")
+                        #exit(1)
                         
                 except ParserError:
                     moves[drone] = None
                     #print("None")
+                
 
             for d in self.system.drones:
                 if d not in moves:
@@ -269,15 +276,20 @@ class Simulation:
                 d.current_zone.current_drones.remove(d)
                 next_zone.current_drones.append(d)
                 d.current_zone = next_zone
+                moved.add(d)
                 #print(f"Moving {d.id} from {d.current_zone.name} to {next_zone.name}")
                 # connection.currently_in.append(d)
                 # connection.currently_in.remove(d)
             # print(f"--- Turn {turn} ---") 
             # for drone in self.system.drones:
             #     print(f"{drone.id} at {drone.current_zone.name}")
-            print(" ".join(f"{drone.id}-{moves[drone].name}" for drone in moves if moves[drone]))
+            #print(f"{d.id} wants {next_zone.name} → current: {len(next_zone.current_drones)}/{next_zone.capacity}")
+            print(" ".join(f"{d.id}-{d.current_zone.name}" for d in moved))
+            #print(" ".join(f"{drone.id}-{moves[drone].name}" for drone in moves if moves[drone]))
 
             turn += 1
+
             # if turn > 20:
             #     break
+
             
