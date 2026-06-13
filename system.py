@@ -36,13 +36,16 @@ class Drone:
                  id: str,
                  path: list[Zone] = [],
                  status: str = "waiting",
-                 turns_remaining: int = 0
+                 turns_remaining: int = 0,
+                 next_zone: Optional[Zone] = None
                  ) -> None:
         self.current_zone = current_zone
         self.id = id
         self.path = path if path else []
         self.status = status
         self.turns_remaining = turns_remaining
+        self.next_zone = next_zone
+
 
 
 class Zone:
@@ -145,13 +148,14 @@ class Parser:
         allowed_config_zone = ["zone", "color", "max_drones"]
         try:
             my_dict = {}
-            start = line.find("[") + 1
-            end = line.find("]")
-            config = line[start:end]
             ln = line.split()
-            for element in config.split():
-                res = element.split("=")
-                my_dict[res[0]] = res[1]
+            if "[" in line:
+                start = line.find("[") + 1
+                end = line.find("]")
+                config = line[start:end]
+                for element in config.split():
+                    res = element.split("=")
+                    my_dict[res[0]] = res[1]
             for key in my_dict:
                 if key not in allowed_config_zone:
                     raise ParserError(f"invalid metadata key: {key}")
@@ -212,7 +216,7 @@ class Simulation:
     def __init__(self,  system: System, pathfinder: PathFinder):
         self.system = system
         self.pathfinder = pathfinder
-
+    # 
     def check_connection(self, zone_a: Zone, zone_b: Zone) -> Optional[Connection]:
         for connection in self.system.connections:
             if (connection.start_zone == zone_a and connection.end_zone == zone_b) or \
@@ -226,34 +230,44 @@ class Simulation:
         for drone in self.system.drones:
             self.system.start_zone.current_drones.append(drone)
         while not all(drone.current_zone == self.system.end_zone for drone in self.system.drones):
-            reserved = []
+            transit_output = {}
             moves = {}
             moved = set()
+            reserved = {}
+      
             for drone in self.system.drones:
+                paths = []
+                reserv_count = 0
                 if drone.current_zone == self.system.end_zone:
                     continue
                 try:
-                   
-                    paths = self.pathfinder.find_path(drone.current_zone, self.system.end_zone)
-                   # print(f"current zone: {drone.current_zone.name}")
-                    # for zone in paths:
-                    #     print(f" this is path {zone.name}")
+                    if drone.turns_remaining > 0:
+                        drone.turns_remaining -= 1
+                        if drone.turns_remaining == 0:
+                            #drone.current_zone.current_drones.remove(drone)
+                            drone.next_zone.current_drones.append(drone)
+                            drone.current_zone = drone.next_zone
+                            moved.add(drone)
+                        continue
+                    paths = self.pathfinder.find_path(drone.current_zone, self.system.end_zone, reserved, self.system.start_zone)
+                    # for path in paths:
+                    #      print(f"{path.name}", end=" ")
+                    # print("\n")
+                    # print("=" * 20)
+                    
                     if len(paths) < 2:
                         moves[drone] = None
                     else:
                         next_zone = paths[1]
-                      #  print(paths[1].name)
                         moves[drone] = next_zone
-                        #reserved.append(next_zone)
-                        # for zone in reserved:
-                        #     print(f"THIS: {zone.name}")
-                        #exit(1)
-                        
+                        reserved[next_zone] = reserved.get(next_zone, 0) + 1
                 except ParserError:
                     moves[drone] = None
-                    #print("None")
-                
-
+            # for zone, n in reserved.items():
+            #     print(f"{zone.name}, {n}")
+            # exit()
+            # for drone, zone in moves.items():
+            #     print(f"{drone.id} → {zone.name if zone else None} at {drone.current_zone.name}")
             for d in self.system.drones:
                 if d not in moves:
                     continue
@@ -270,26 +284,37 @@ class Simulation:
                 
                 if len(next_zone.current_drones) >= next_zone.capacity:
                     continue
-                # print(f"Turn {turn}")
-                # for drone in self.system.drones:
-                #     print(f"  {drone.id} at {drone.current_zone.name}")
-                d.current_zone.current_drones.remove(d)
-                next_zone.current_drones.append(d)
-                d.current_zone = next_zone
-                moved.add(d)
-                #print(f"Moving {d.id} from {d.current_zone.name} to {next_zone.name}")
-                # connection.currently_in.append(d)
-                # connection.currently_in.remove(d)
-            # print(f"--- Turn {turn} ---") 
-            # for drone in self.system.drones:
-            #     print(f"{drone.id} at {drone.current_zone.name}")
-            #print(f"{d.id} wants {next_zone.name} → current: {len(next_zone.current_drones)}/{next_zone.capacity}")
-            print(" ".join(f"{d.id}-{d.current_zone.name}" for d in moved))
-            #print(" ".join(f"{drone.id}-{moves[drone].name}" for drone in moves if moves[drone]))
-
+                if next_zone.zone_type == "restricted":
+                    transit_output[d] = f"{d.id}-{d.current_zone.name}-{next_zone.name}"
+                    d.next_zone = next_zone
+                    d.turns_remaining = 1
+                    d.current_zone.current_drones.remove(d)
+                    connection.currently_in.append(d)
+                    moved.add(d)
+                else:
+                
+                    connection.currently_in.append(d)
+                    d.current_zone.current_drones.remove(d)
+                    connection.currently_in.remove(d)
+                    next_zone.current_drones.append(d)
+                    d.current_zone = next_zone
+                    moved.add(d)
+            output = []
+            for drone in self.system.drones:
+                 print(f"{drone.id} at {drone.current_zone.name} turns_remaining={drone.turns_remaining}")
+            for d in moved:
+                if d in transit_output:
+                    output.append(transit_output[d])
+                else:
+                    output.append(f"{d.id}-{d.current_zone.name}")
+            print(" ".join(output))
+            # exit()
+            # print(" ".join(f"{d.id}-{d.current_zone.name}" for d in moved))
+                
+            if turn > 30:
+                exit()
             turn += 1
 
-            # if turn > 20:
-            #     break
+    
 
             
