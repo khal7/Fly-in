@@ -299,7 +299,7 @@ class Simulation:
                 else:
                     connection.currently_in.append(d)
                     d.current_zone.current_drones.remove(d)
-                    connection.currently_in.remove(d)
+                    #connection.currently_in.remove(d)
                     next_zone.current_drones.append(d)
                     d.current_zone = next_zone
                     moved.add(d)
