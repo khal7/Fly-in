@@ -246,7 +246,7 @@ class Simulation:
                         drone.turns_remaining -= 1
                         if drone.turns_remaining == 0:
                             #drone.current_zone.current_drones.remove(drone)
-                            drone.next_zone.current_drones.append(drone)
+                           # drone.next_zone.current_drones.append(drone)
                             drone.current_zone = drone.next_zone
                             moved.add(drone)
                         continue
@@ -290,6 +290,9 @@ class Simulation:
                     continue
                 #print(f"D2 wants loop_a: connection={len(connection.currently_in)}/{connection.max_capacity} zone={len(next_zone.current_drones)}/{next_zone.capacity}")
                 if next_zone.zone_type == "restricted":
+                    if len(next_zone.current_drones) >= next_zone.capacity:
+                        continue
+                    next_zone.current_drones.append(d)
                     transit_output[d] = f"{d.id}-{d.current_zone.name}-{next_zone.name}"
                     d.next_zone = next_zone
                     d.turns_remaining = 1

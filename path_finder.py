@@ -58,6 +58,10 @@ class PathFinder():
                 # if len(actual) + reserved_count >= neighbor.capacity:
                 #     if neighbor != end_zone:
                 #         continue
+                # reserved_count = reserved.get(neighbor, 0)
+                # actual = len(neighbor.current_drones)
+                # if actual + reserved_count >= neighbor.capacity:
+                #     continue
                 if neighbor == ss:
                     continue
                 if neighbor.zone_type == "restricted":
