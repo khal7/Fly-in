@@ -1,4 +1,4 @@
-from system import System , Zone, ParserError
+from system import System, Zone, ParserError
 
 
 class PathFinder():
@@ -14,13 +14,11 @@ class PathFinder():
                 neighbors.append(item.start_zone)
         return neighbors
 
-    def find_path(self, start_zone: Zone, end_zone: Zone, reserved: list[Zone], ss) -> list[Zone]:
+    def find_path(self, start_zone: Zone, end_zone: Zone, extra_cost: dict[Zone, int]) -> tuple[Zone, ...]:
         needs_exploration = [(0, start_zone)]
         previous: dict[Zone, Zone] = {}
         visited = []
         costs = {start_zone: 0}
-        #print(f"reserved: {[z.name for z in reserved]}")
-        #print(f"find_path called: start={start_zone.name} end={end_zone.name}")
         while needs_exploration:
             cheapest = min(needs_exploration, key=lambda x: x[0])
             needs_exploration.remove(cheapest)
@@ -35,43 +33,76 @@ class PathFinder():
                     current = previous[current]
                 full_path.append(start_zone)
                 full_path.reverse()
-                return full_path
+                return tuple(full_path)
             else:
                 visited.append(current_zone)
             neighbors = self.get_neighbors(current_zone)
             for neighbor in neighbors:
                 if neighbor.zone_type == "blocked":
                     continue
-                # if len(neighbor.current_drones) >= neighbor.capacity:
-                #     if neighbor != end_zone:
-                #         continue
-                # This is to check if next zone is reserved by other drones
-                # if neighbor in reserved:
-                #      continue
-                
-                # reserved_count = reserved.get(neighbor, 0)
-                # if len(neighbor.current_drones) + reserved_count >= neighbor.capacity:
-                #     if neighbor != end_zone:
-                #         continue
-                # actual = [d for d in neighbor.current_drones if d.turns_remaining == 0]
-                # reserved_count = reserved.get(neighbor, 0)
-                # if len(actual) + reserved_count >= neighbor.capacity:
-                #     if neighbor != end_zone:
-                #         continue
-                # reserved_count = reserved.get(neighbor, 0)
-                # actual = len(neighbor.current_drones)
-                # if actual + reserved_count >= neighbor.capacity:
-                #     continue
-                if neighbor == ss:
-                    continue
                 if neighbor.zone_type == "restricted":
-                    new_cost = cost + 2
+                    new_cost = cost + 2 + extra_cost.get(neighbor, 0)
                 elif neighbor.zone_type == "priority":
-                    new_cost = cost + 0.5
+                    new_cost = cost + 0.5 + extra_cost.get(neighbor, 0)
                 else:
-                    new_cost = cost + 1
+                    new_cost = cost + 1 + extra_cost.get(neighbor, 0)
                 if new_cost < costs.get(neighbor, float('inf')):
                     costs[neighbor] = new_cost
                     previous[neighbor] = current_zone
                     needs_exploration.append((new_cost, neighbor))
         raise ParserError("no path found from start to goal")
+# remember find path needs to return a path as tuple
+
+    def get_n_priority(self, path : tuple) -> int:
+        count = 0
+        for zone in path:
+            if zone.zone_type == "priority":
+                count += 1
+        return count
+
+    def get_connection(self, zone_a: Zone, zone_b: Zone):
+        for connection in self.system.connections:
+            if ((connection.start_zone == zone_a and connection.end_zone == zone_b)
+                or (connection.start_zone == zone_b and connection.end_zone == zone_a)):
+                return connection
+        return None
+    
+    def capacity_zone_link(self, path: tuple):
+        
+        min_capacity = float("inf")
+        for i in range(len(path) - 1):
+            con = self.get_connection(path[i], path[i + 1])
+            if min_capacity > con.max_capacity:
+                min_capacity = con.max_capacity
+            if min_capacity > path[i + 1].capacity:
+                min_capacity = path[i + 1].capacity
+        return min_capacity
+            
+            
+        
+    def path_cost(self, path: tuple) -> int:
+        count = 0
+        for zone in path:
+            if zone == self.system.start_zone:
+                continue
+            if zone.zone_type == "restricted":
+                count += 2
+            else:
+                count += 1 
+        return count
+
+    def find_all_paths(self, start_zone: Zone, end_zone: Zone) -> list:
+        extra_cost = {}
+        path_info = {}
+        while True:
+            p = self.find_path(start_zone, end_zone, extra_cost)
+            if p in path_info:
+                break
+            path_info[p] = (self.path_cost(p), self.get_n_priority(p), self.capacity_zone_link(p))
+            for zone in p:
+                if zone == self.system.start_zone or zone == self.system.end_zone:
+                    continue
+                extra_cost[zone] = extra_cost.get(zone, 0) + 10
+        
+        #return sorted(path_info.items(), key=lambda item: item[1])
+        return sorted(path_info.items(), key=lambda item: (item[1][0], -item[1][1], -item[1][2]))

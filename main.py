@@ -21,7 +21,11 @@ if __name__=="__main__":
     path = PathFinder(system)
     #get_path = path.find_path(system.start_zone, system.end_zone)
     similation = Simulation(system, path)
-    similation.run()
+    try:
+        similation.run()
+    except SimulationError as e:
+        print(e)
+        exit(1)
     
 
     # for zone in get_path:
