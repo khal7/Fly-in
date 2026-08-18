@@ -243,11 +243,26 @@ class Simulation:
                     path_index = 0
                 assigned = 1
                 drone.path = paths[path_index][0]
-        
-	
-	
-	
-	
+                
+    def moving_drones(self):
+        turn = 0
+        for drone in self.system.drones:
+            self.system.start_zone.current_drones.append(drone)
+        while not all(drone.current_zone == self.system.end_zone for drone in self.system.drones):
+            for drone in self.system.drones:
+                if drone.current_zone == self.system.end_zone:
+                    continue
+                indx = drone.path.index(drone.current_zone)
+                if len(drone.path[indx + 1].current_drones) < drone.path[indx + 1].capacity:
+                    drone.current_zone.current_drones.remove(drone)
+                    drone.path[indx + 1].current_drones.append(drone)
+                    drone.current_zone = drone.path[indx + 1]
+                    
+            turn += 1
+
+
+
+
     def run(self) -> None:
         turn = 1
         for drone in self.system.drones:
