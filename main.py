@@ -22,7 +22,8 @@ if __name__=="__main__":
     #get_path = path.find_path(system.start_zone, system.end_zone)
     similation = Simulation(system, path)
     try:
-        similation.run()
+        similation.assign_path_to_drones()
+        similation.moving_drones()
     except SimulationError as e:
         print(e)
         exit(1)
