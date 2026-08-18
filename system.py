@@ -1,7 +1,9 @@
 from __future__ import annotations
 from typing import Optional
+from rich.console import Console
+from rich.text import Text
 
-
+console = Console()
 class ParserError(Exception):
 	pass
 
@@ -279,7 +281,7 @@ class Simulation:
 						drone.next_zone.current_drones.append(drone)
 
 						movements.append(
-							f"{drone.id}-{drone.next_zone.name}"
+							(f"{drone.id}-{drone.next_zone.name}", drone.next_zone)
 						)
 
 						drone.current_zone = drone.next_zone
@@ -310,12 +312,11 @@ class Simulation:
 							drone.status = "moving"
 
 							movements.append(
-								f"{drone.id}-{connection.name}"
+								(f"{drone.id}-{connection.name}", drone.next_zone)
 							)
-
 						else:
 							movements.append(
-								f"{drone.id}-{next_zone.name}"
+								(f"{drone.id}-{next_zone.name}", next_zone)
 							)
 
 							drone.current_zone.current_drones.remove(drone)
@@ -325,4 +326,16 @@ class Simulation:
 			turn += 1
 
 			if movements:
-				print(" ".join(movements))
+				output = Text()
+
+				for movement, zone in movements:
+					color = zone.color if zone.color else "white"
+
+					try:
+						Text("test", style=color)
+					except Exception:
+						color = "white"
+
+					output.append(movement + " ", style=color)
+
+				console.print(output)
