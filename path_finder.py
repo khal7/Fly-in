@@ -94,6 +94,8 @@ class PathFinder():
 	def find_all_paths(self, start_zone: Zone, end_zone: Zone) -> list:
 		extra_cost = {}
 		path_info = {}
+		first_path = None
+
 		while True:
 			try:
 				p = self.find_path(start_zone, end_zone, extra_cost)
@@ -103,8 +105,10 @@ class PathFinder():
 				
 			if p in path_info:
 				break
-			# if not len(p) >= len(firt_path) + 1:
-			#     continue
+			if first_path is None:
+				first_path = p
+			elif len(p) > len(first_path) + 1:
+				break
 			path_info[p] = (self.path_cost(p), self.get_n_priority(p), self.capacity_zone_link(p))
 			for zone in p:
 				if zone == self.system.start_zone or zone == self.system.end_zone:

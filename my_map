@@ -1,7 +1,0 @@
-nb_drones: 4
-start_hub: start 0 0 [max_drones=4]
-hub: middle 1 0 [max_drones=2]
-end_hub: goal 2 0 [max_drones=4]
-connection: start-middle [max_link_capacity=2]
-connection: middle-goal [max_link_capacity=2]
-
