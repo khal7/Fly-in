@@ -1,17 +1,14 @@
 import sys
-from system import *
-from path_finder import *
+from models import ParserError, SimulationError
+from path_finder import PathFinder
+from parser import Parser
+from system import Simulation
 
 
-
-
-if __name__=="__main__":
-    
-
+if __name__ == "__main__":
 
     file = sys.argv[1]
     parser = Parser(file)
-
 
     try:
         system = parser.parse()
@@ -19,7 +16,6 @@ if __name__=="__main__":
         print(e)
         exit(1)
     path = PathFinder(system)
-    #get_path = path.find_path(system.start_zone, system.end_zone)
     similation = Simulation(system, path)
     try:
         similation.assign_path_to_drones()
@@ -27,15 +23,3 @@ if __name__=="__main__":
     except SimulationError as e:
         print(e)
         exit(1)
-    
-
-    # for zone in get_path:
-    #     print(zone.name)
-    # for zone in system.zones:
-    #     print(zone.name, zone.zone_type, zone.x, zone.y, zone.color, zone.capacity)
-    # print("=" * 40)
-    # for connection in system.connections:
-    #     print(connection.start_zone.name, connection.end_zone.name, connection.max_capacity)
-    # print("=" * 40)
-    # for drone in system.drones:
-    #     print(drone.id, drone.current_zone.name)
