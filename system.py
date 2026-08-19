@@ -4,6 +4,8 @@ from rich.console import Console
 from rich.text import Text
 
 console = Console()
+
+
 class ParserError(Exception):
 	pass
 
@@ -29,7 +31,7 @@ class Connection:
 				 end_zone: Zone,
 				 max_capacity: int = 1,
 				 currently_in: Optional[list[Drone]] = None
-				 
+
 				 ):
 		self.name = name
 		self.max_capacity = max_capacity
@@ -250,7 +252,7 @@ class Simulation:
 					path_index = 0
 				assigned = 1
 				drone.path = paths[path_index][0]
-	
+
 	def moving_drones(self):
 		turn = 0
 
@@ -263,65 +265,107 @@ class Simulation:
 		):
 			movements = []
 			used_this_turn = {}
+			arriving = []
 
+			# 1. Progress transits.
+			# When a transit finishes, free the connection immediately.
 			for drone in self.system.drones:
+				if drone.status != "moving":
+					continue
+
+				if drone.turns_remaining > 0:
+					drone.turns_remaining -= 1
+
+				if drone.turns_remaining == 0:
+					connection = self.check_connection(
+						drone.current_zone,
+						drone.next_zone
+					)
+
+					connection.currently_in.remove(drone)
+
+					arriving.append(drone)
+
+			# 2. Move drones that were already waiting.
+			# Drones in 'arriving' are NOT allowed to move again this turn.
+			for drone in self.system.drones:
+				if drone in arriving:
+					continue
+
+				if drone.status != "waiting":
+					continue
+
 				if drone.current_zone == self.system.end_zone:
 					continue
 
-				if drone.status == "moving":
-					drone.turns_remaining -= 1
-
-					if drone.turns_remaining == 0:
-						connection = self.check_connection(
-							drone.current_zone, drone.next_zone
-						)
-
-						connection.currently_in.remove(drone)
-						drone.current_zone.current_drones.remove(drone)
-						drone.next_zone.current_drones.append(drone)
-
-						movements.append(
-							(f"{drone.id}-{drone.next_zone.name}", drone.next_zone)
-						)
-
-						drone.current_zone = drone.next_zone
-						drone.next_zone = None
-						drone.status = "waiting"
-
-						continue
-
 				indx = drone.path.index(drone.current_zone)
+
+				if indx + 1 >= len(drone.path):
+					continue
+
 				next_zone = drone.path[indx + 1]
 
-				if len(next_zone.current_drones) < next_zone.capacity:
-					connection = self.check_connection(
-						drone.current_zone, next_zone
+				connection = self.check_connection(
+					drone.current_zone,
+					next_zone
+				)
+
+				in_flight = len(connection.currently_in)
+				crossed_now = used_this_turn.get(connection, 0)
+
+				if in_flight + crossed_now >= connection.max_capacity:
+					continue
+
+				if next_zone.zone_type == "restricted":
+					used_this_turn[connection] = crossed_now + 1
+
+					drone.current_zone.current_drones.remove(drone)
+					connection.currently_in.append(drone)
+
+					drone.next_zone = next_zone
+					drone.turns_remaining = 1
+					drone.status = "moving"
+
+					movements.append(
+						(f"{drone.id}-{connection.name}", next_zone)
 					)
 
-					in_flight = len(connection.currently_in)
-					crossed_now = used_this_turn.get(connection, 0)
+				else:
+					if len(next_zone.current_drones) >= next_zone.capacity:
+						continue
 
-					if in_flight + crossed_now < connection.max_capacity:
-						used_this_turn[connection] = crossed_now + 1
+					used_this_turn[connection] = crossed_now + 1
 
-						if next_zone.zone_type == "restricted":
-							connection.currently_in.append(drone)
+					drone.current_zone.current_drones.remove(drone)
+					next_zone.current_drones.append(drone)
 
-							drone.next_zone = next_zone
-							drone.turns_remaining = 2
-							drone.status = "moving"
+					drone.current_zone = next_zone
 
-							movements.append(
-								(f"{drone.id}-{connection.name}", drone.next_zone)
-							)
-						else:
-							movements.append(
-								(f"{drone.id}-{next_zone.name}", next_zone)
-							)
+					movements.append(
+						(f"{drone.id}-{next_zone.name}", next_zone)
+					)
 
-							drone.current_zone.current_drones.remove(drone)
-							next_zone.current_drones.append(drone)
-							drone.current_zone = next_zone
+			# 3. Put finished-transit drones into their destination.
+			# This happens AFTER departures, so the newly freed zone capacity
+			# is available in the same turn.
+			for drone in arriving:
+				next_zone = drone.next_zone
+
+				if len(next_zone.current_drones) >= next_zone.capacity:
+					# Stay waiting at the destination boundary.
+					drone.turns_remaining = 0
+					drone.status = "moving"
+					continue
+
+				next_zone.current_drones.append(drone)
+
+				movements.append(
+					(f"{drone.id}-{next_zone.name}", next_zone)
+				)
+
+				drone.current_zone = next_zone
+				drone.next_zone = None
+				drone.status = "waiting"
 
 			turn += 1
 
@@ -336,6 +380,11 @@ class Simulation:
 					except Exception:
 						color = "white"
 
-					output.append(movement + " ", style=color)
+					output.append(
+						movement + " ",
+						style=color
+					)
 
 				console.print(output)
+
+		print(f"Number of turns: {turn}")
