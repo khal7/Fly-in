@@ -138,18 +138,13 @@ class Simulation:
             turn += 1
             if movements:
                 output = Text()
-
                 for drone, movement, zone in movements:
                     color = zone.color if zone.color else "white"
-
                     try:
                         Text("test", style=color)
                     except Exception:
                         color = "white"
-
-                    output.append(
-                        movement + " ",
-                        style=color
-                    )
+                    output.append(drone.id, style="white")
+                    output.append(movement[len(drone.id):] + " ", style=color)
                 console.print(output)
         print(f"Number of turns: {turn}")

@@ -6,14 +6,20 @@ from system import Simulation
 
 
 if __name__ == "__main__":
-
-    file = sys.argv[1]
-    parser = Parser(file)
+    try:
+        file = sys.argv[1]
+        parser = Parser(file)
+    except IndexError:
+        print("Error: no map file provided")
+        exit(1)
 
     try:
         system = parser.parse()
     except ParserError as e:
         print(e)
+        exit(1)
+    except KeyboardInterrupt:
+        print("\nThe program interrupted by user")
         exit(1)
     path = PathFinder(system)
     similation = Simulation(system, path)
