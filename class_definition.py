@@ -57,7 +57,7 @@ class Zone:
     def __init__(self, name: str,
                  x: int,
                  y: int,
-                 capacity: int = 1,
+                 capacity: int | float = 1,
                  zone_type: str = "normal",
                  current_drones: Optional[list[Drone]] = None,
                  color: Optional[str] = None

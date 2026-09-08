@@ -2,7 +2,7 @@ from __future__ import annotations
 from rich.console import Console
 from rich.text import Text
 from typing import TYPE_CHECKING
-from models import System, Zone, Connection, SimulationError
+from class_definition import System, Zone, Connection, SimulationError
 if TYPE_CHECKING:
     from path_finder import PathFinder
 

@@ -1,4 +1,4 @@
-from models import System, Zone, Drone, Connection, ParserError
+from class_definition import System, Zone, Drone, Connection, ParserError
 
 
 class Parser:
@@ -24,7 +24,7 @@ class Parser:
                         if system.start_zone is not None:
                             raise ParserError("duplicate start_hub")
                         zone = self.get_zone(line)
-                        zone.capacity = 99999
+                        zone.capacity = float("inf")
 
                         system.start_zone = zone
                         system.zones.append(zone)
@@ -34,7 +34,7 @@ class Parser:
                         if system.end_zone is not None:
                             raise ParserError("duplicate end_hub")
                         zone = self.get_zone(line)
-                        zone.capacity = 99999
+                        zone.capacity = float("inf")
                         system.end_zone = zone
                         system.zones.append(zone)
 

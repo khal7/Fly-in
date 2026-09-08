@@ -1,5 +1,5 @@
 from system import System, Zone, Connection
-from models import ParserError
+from class_definition import ParserError
 
 
 class PathFinder():
@@ -53,7 +53,6 @@ class PathFinder():
                     previous[neighbor] = current_zone
                     needs_exploration.append((new_cost, neighbor))
         raise ParserError("Error: no path found from start to goal")
-# remember find path needs to return a path as tuple
 
     def get_n_priority(self, path: tuple) -> int:
         count = 0
@@ -123,7 +122,6 @@ class PathFinder():
                         or zone == self.system.end_zone):
                     continue
                 extra_cost[zone] = extra_cost.get(zone, 0) + 10
-        # return sorted(path_info.items(), key=lambda item: item[1])
         return sorted(
             path_info.items(), key=lambda item: (
                 item[1][0], -item[1][1], -item[1][2]))

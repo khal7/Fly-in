@@ -1,5 +1,5 @@
 import sys
-from models import ParserError, SimulationError
+from class_definition import ParserError, SimulationError
 from path_finder import PathFinder
 from parser import Parser
 from system import Simulation
